@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>手眼标定方法对比</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]})"></script>
+<style>
+:root{
+  --bg:#fbfaf7; --fg:#1d1f23; --muted:#5d636d; --line:#dcd8cf; --card:#ffffff;
+  --a:#2f6db5; --a-soft:#e6eef8; --b:#b5482f; --b-soft:#f8ebe6; --code:#f1efe9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16181c; --fg:#e7e5e0; --muted:#a2a7af; --line:#33373e; --card:#1d2025;
+    --a:#7fb0ea; --a-soft:#1f2b3a; --b:#ec9a82; --b-soft:#3a2520; --code:#24272d;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16181c; --fg:#e7e5e0; --muted:#a2a7af; --line:#33373e; --card:#1d2025;
+  --a:#7fb0ea; --a-soft:#1f2b3a; --b:#ec9a82; --b-soft:#3a2520; --code:#24272d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:16px/1.75 -apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:40px 16px 80px}
+h1{font-size:30px;line-height:1.3;margin:0 0 8px}
+h2{font-size:22px;margin:56px 0 12px;padding-top:8px;border-top:1px solid var(--line)}
+h3{font-size:18px;margin:28px 0 8px}
+p,li{color:var(--fg)}
+.lede{color:var(--muted);font-size:17px;margin:0 0 24px}
+.tag{display:inline-block;font-size:13px;font-weight:600;padding:1px 10px;border-radius:999px}
+.tag.a{background:var(--a-soft);color:var(--a)} .tag.b{background:var(--b-soft);color:var(--b)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:720px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.card.a{border-top:3px solid var(--a)} .card.b{border-top:3px solid var(--b)}
+.card h3{margin-top:4px}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.table-wrap{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted);font-size:14px}
+td:first-child{font-weight:600;white-space:nowrap}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+svg{width:100%;height:auto;display:block}
+svg text{fill:var(--fg);font-size:13px;font-family:inherit}
+svg .muted{fill:var(--muted);font-size:12px}
+svg .box{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+svg .ea{stroke:var(--a);stroke-width:2;fill:none}
+svg .eb{stroke:var(--b);stroke-width:2;fill:none}
+svg .unk{stroke-dasharray:6 4}
+svg .ta{fill:var(--a);font-weight:600} svg .tb{fill:var(--b);font-weight:600}
+.note{border-left:3px solid var(--line);padding:4px 14px;color:var(--muted);margin:16px 0}
+ol li,ul li{margin:4px 0}
+footer{margin-top:56px;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+
+<h1>两种 eye-to-hand 手眼标定的方法原理对比</h1>
+<p class="lede">相机固定在机械臂外，要求的核心量都是相机相对机械臂基座的位姿 \(T_{\text{base}}^{\text{cam}}\)。两种方法的区别在于：用什么作为“相机和机械臂都能定位的共同对象”，以及由此得到的方程形式。</p>
+
+<div class="grid">
+  <div class="card a">
+    <span class="tag a">方法 A · 传统</span>
+    <h3>AprilTag 位姿手眼标定</h3>
+    <p>在机械臂末端贴一张 12 cm AprilTag，相机单目解算每一帧 Tag 的完整 6 自由度位姿，与机械臂正运动学位姿一起求解 \(AX = YB\)。</p>
+  </div>
+  <div class="card b">
+    <span class="tag b">方法 B · 新方案</span>
+    <h3>激光点对点标定</h3>
+    <p>末端装激光位移传感器，把激光打在桌面板上的光斑当作标志点。双目三角化得到光斑的相机坐标，测距值加正运动学得到它的基座坐标，再做 3D–3D 刚体配准。</p>
+  </div>
+</div>
+
+<h2>1. 坐标链</h2>
+<p>实线是每次采样都能直接得到的已知量，虚线是要标定的未知量。两条链在“末端标志物”处闭合。</p>
+
+<svg viewBox="0 0 880 300" role="img" aria-label="两种方法的坐标链示意图">
+  <text x="10" y="22" class="ta">方法 A：AprilTag</text>
+  <rect class="box" x="10" y="40" width="120" height="44" rx="6"/><text x="70" y="67" text-anchor="middle">base</text>
+  <rect class="box" x="250" y="40" width="120" height="44" rx="6"/><text x="310" y="67" text-anchor="middle">flange</text>
+  <rect class="box" x="490" y="40" width="120" height="44" rx="6"/><text x="550" y="67" text-anchor="middle">Tag</text>
+  <rect class="box" x="250" y="110" width="120" height="44" rx="6"/><text x="310" y="137" text-anchor="middle">camera</text>
+  <line class="ea" x1="130" y1="62" x2="250" y2="62"/><text x="190" y="54" text-anchor="middle" class="muted">FK(q) 已知</text>
+  <line class="ea unk" x1="370" y1="62" x2="490" y2="62"/><text x="430" y="54" text-anchor="middle" class="muted">X 未知</text>
+  <line class="ea unk" x1="70" y1="84" x2="250" y2="132"/><text x="140" y="128" text-anchor="middle" class="muted">Y 未知</text>
+  <line class="ea" x1="370" y1="132" x2="550" y2="84"/><text x="490" y="128" text-anchor="middle" class="muted">B：Tag 6D 位姿（PnP）</text>
+
+  <text x="10" y="192" class="tb">方法 B：激光光斑</text>
+  <rect class="box" x="10" y="210" width="120" height="44" rx="6"/><text x="70" y="237" text-anchor="middle">base</text>
+  <rect class="box" x="250" y="210" width="120" height="44" rx="6"/><text x="310" y="237" text-anchor="middle">flange</text>
+  <rect class="box" x="490" y="210" width="140" height="44" rx="6"/><text x="560" y="237" text-anchor="middle">光斑 p（一个点）</text>
+  <rect class="box" x="720" y="210" width="120" height="44" rx="6"/><text x="780" y="237" text-anchor="middle">双目相机</text>
+  <line class="eb" x1="130" y1="232" x2="250" y2="232"/><text x="190" y="224" text-anchor="middle" class="muted">FK(q) 已知</text>
+  <line class="eb" x1="370" y1="232" x2="490" y2="232"/><text x="430" y="224" text-anchor="middle" class="muted">o + d·u</text>
+  <line class="eb" x1="630" y1="232" x2="720" y2="232"/><text x="675" y="224" text-anchor="middle" class="muted">三角化</text>
+  <path class="eb unk" d="M70 254 Q 420 300 780 254"/><text x="420" y="292" text-anchor="middle" class="muted">T_base_cam 未知（o、u 可一并标定）</text>
+</svg>
+
+<h2>2. 方法 A：AprilTag 位姿手眼标定（AX = YB）</h2>
+
+<h3>2.1 观测</h3>
+<ul>
+  <li>Tag 贴在末端（<code>link_eef</code>），尺寸 0.12 m，必须与实物一致，否则平移按比例出错。</li>
+  <li>相机使用单目（ZED 左目校正图像），AprilTag 检测器内部做 PnP，得到 \(B_i = T_{\text{cam}}^{\text{tag}}\)，即 Tag 在相机下的完整 6D 位姿。</li>
+  <li>机械臂由 URDF 正运动学给出 \(T_{\text{world}}^{\text{tagmount}}\)，相机挂载坐标系 \(T_{\text{world}}^{\text{cammount}}\) 已知（eye-to-hand 时就是基座）。由此得到 \(A_i = (T_{\text{world}}^{\text{cammount}})^{-1}\,T_{\text{world}}^{\text{tagmount}}\)。</li>
+</ul>
+
+<h3>2.2 方程</h3>
+<p>每一帧都满足闭环约束：</p>
+$$A_i\,X = Y\,B_i,\qquad X = T_{\text{tagmount}}^{\text{tag}},\quad Y = T_{\text{cammount}}^{\text{cam}}$$
+<p>两个未知量各 6 个自由度，共 12 个参数。每帧给出 6 个方程（3 个旋转、3 个平移），所以理论上两帧就够，但旋转部分要求姿态在至少两个轴上有变化，否则 \(X\)、\(Y\) 的部分自由度不可观测。</p>
+
+<h3>2.3 求解（<code>extr_calib.py</code> 中的 <code>calibrate_cammount_and_tag_prob</code>）</h3>
+<ol>
+  <li><b>初值：</b>交替求解。固定 \(X\)，用 Wahba/SVD 求 \(R_Y\)，再用线性最小二乘求 \(t_Y\)；然后固定 \(Y\) 求 \(X\)；如此交替两轮。</li>
+  <li><b>精化：</b>定义残差 \(E_i = X^{-1}A_i^{-1}\,Y\,B_i\)（理想时为单位阵），取 \(\log(E_i)\in\mathfrak{se}(3)\) 作为 6 维残差，在 SE(3) 上左乘扰动，做阻尼 Gauss–Newton，雅可比用数值差分。</li>
+  <li><b>加权与鲁棒：</b>旋转、平移分别按协方差先验做 Mahalanobis 加权，再乘 Huber 权重抑制离群帧。默认先验为 3° / 1 cm（团队不同副本中改成过 10° / 2 mm）。这组数决定了旋转残差和平移残差之间的相对权重。</li>
+</ol>
+
+<h3>2.4 采集质量控制</h3>
+<ul>
+  <li>画面中必须恰好一个 Tag，编号正确，hamming 为 0，decision margin ≥ 30，四个角点不贴边。</li>
+  <li>Tag 自身重投影误差 ≤ 1 px；观测要在 0.5 s 内；机械臂必须静止且无报错。</li>
+  <li>与已有姿态相比，至少要变化 10 mm 或 5°；训练姿态的旋转向量第二奇异值 &lt; 0.05 时判为退化，提示绕两个方向旋转。</li>
+  <li>至少 8 组开始求解，建议 30 组训练加 10 组独立验证；开始验证后训练集冻结。</li>
+</ul>
+
+<h2>3. 方法 B：激光点对点标定</h2>
+
+<h3>3.1 观测</h3>
+<ul>
+  <li><b>相机侧：</b>每个姿态拍激光关、开两组双目图，相减得到红色增量，经高斯平滑和加权质心定位光斑，左右目三角化得到 \(p^{\text{cam}}_i\)。</li>
+  <li><b>激光侧：</b>J200 通过 Modbus 读 10 次距离取平均，得到 \(d_i\)，用 200 mm 参考件做过零点修正。</li>
+  <li><b>机械臂侧：</b>由关节角经 URDF 正运动学得到 \(T_{\text{base}}^{\text{flange}}(q_i)\)。</li>
+</ul>
+
+<h3>3.2 方程</h3>
+<p>激光在法兰坐标系下是一条射线（原点 \(o\)，单位方向 \(u\)），光斑在法兰下的位置是 \(o + d_i\,u\)。同一个物理点从两条路径换算到基座应当重合：</p>
+$$T_{\text{base}}^{\text{cam}}\;p^{\text{cam}}_i \;=\; T_{\text{base}}^{\text{flange}}(q_i)\,\bigl(o + d_i\,u\bigr)$$
+<p>未知量最多 11 个：相机位姿 6 个、激光原点 3 个、激光方向 2 个。每个样本只提供 3 个方程（一个点），所以需要的样本数比方法 A 多，项目推荐 20–30 个。</p>
+
+<h3>3.3 求解（两阶段）</h3>
+<ol>
+  <li><b>联合标定</b>（<code>solve_joint_calibration.py</code>）：11 个参数一起做非线性最小二乘，先用 soft-L1 鲁棒损失从多个初值出发，再用线性损失精化。这一步要求末端有多轴旋转，否则激光射线不可观测。</li>
+  <li><b>只求相机</b>（<code>solve_camera_only_fixed_laser.py</code>，当前正式参数）：激光射线固定为已标定值，每个样本的 \(p^{\text{base}}_i\) 就成为已知点，问题变成两组 3D 点之间的刚体配准，用带权 Kabsch/SVD 一步闭式求解：
+  $$\min_{R,t}\sum_i w_i\,\bigl\|R\,p^{\text{cam}}_i + t - p^{\text{base}}_i\bigr\|^2$$</li>
+</ol>
+
+<h3>3.4 采集质量控制</h3>
+<ul>
+  <li>激光距离在 120–280 mm 量程内，10 次读数标准差 ≤ 0.10 mm。</li>
+  <li>左右光斑 SNR ≥ 10，左右极线误差 ≤ 2 px，视差 &gt; 5 px。</li>
+  <li>采集前后法兰漂移 ≤ 0.20 mm、≤ 0.05°，机械臂错误码为 0。</li>
+  <li>光斑定位参数用前 13 组的留一误差选定，后 6 组只做时间独立验证。</li>
+</ul>
+
+<h2>4. 逐项对比</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th></th><th><span class="tag a">A · AprilTag</span></th><th><span class="tag b">B · 激光</span></th></tr></thead>
+  <tbody>
+    <tr><td>共同对象</td><td>末端贴的 Tag</td><td>激光打在板上的光斑</td></tr>
+    <tr><td>每帧信息量</td><td>6 自由度位姿（6 个方程）</td><td>一个 3D 点（3 个方程）</td></tr>
+    <tr><td>方程形式</td><td>\(AX = YB\)，SE(3) 上的非线性问题</td><td>点对点刚体配准，激光射线已知时有闭式解</td></tr>
+    <tr><td>未知量</td><td>\(Y\)（相机）+ \(X\)（Tag 安装），12 个</td><td>相机 6 个 + 激光射线 5 个；正式阶段只求相机 6 个</td></tr>
+    <tr><td>3D 信息来源</td><td>单目 PnP，依赖 Tag 尺寸和内参</td><td>双目三角化，依赖基线与双目标定</td></tr>
+    <tr><td>对姿态的要求</td><td>必须多轴旋转，否则退化</td><td>求相机只需空间中不共线的点；求激光射线才需多轴旋转</td></tr>
+    <tr><td>主要误差源</td><td>PnP 的深度和法向误差（单个平面 Tag 尤其明显）、Tag 尺寸、Tag 粘贴刚性、FK</td><td>光斑定位、双目尺度、激光射线、测距零点、FK</td></tr>
+    <tr><td>末端负载</td><td>需要贴 Tag，标定后可去掉</td><td>激光器本身就是工作工具，标定的就是实际使用的工具点</td></tr>
+    <tr><td>样本量建议</td><td>8 组起解，建议 30 训练 + 10 验证</td><td>至少 12 组，建议 20–30 训练 + 8–10 验证</td></tr>
+    <tr><td>误差指标</td><td>每帧闭环的旋转（°）和平移（mm）残差</td><td>基座下的点距离误差（mm），有留一和时间验证</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>5. 实测情况与注意事项</h2>
+<ul>
+  <li>激光方案当前结果（19 个样本，均采自相机最后一次移动之后）：拟合 RMS 2.39 mm，留一 RMS 2.70 mm，时间留出 RMS 2.15 mm，独立无运动复测约 2.3 mm。</li>
+  <li>用小板单 Tag 方法得到的相机外参代入同一批激光数据，单目约 15.6 mm、双目约 12.7 mm。但同一批小板数据中，两组姿态反推的法兰到 Tag 变换相差约 12 mm、4.4°，说明那次小板实验本身存在系统偏差。这个数字只能说明那一次实验的结果，<b>不能当作“传统方法普遍更差”的结论</b>。</li>
+  <li>激光方案的样本点都落在同一块桌面板上。刚体配准在数学上可解，但对远离板面的位置，精度是外推出来的，还需要在不同高度的空间点上做验证。</li>
+  <li>双目尺度可能偏大约 1.6%（基线约 119.1 mm，而非标定值 121.1 mm）。在方法 B 中，这个误差会被相机外参部分吸收，需要单独重新做双目标定。</li>
+  <li>两种方法都依赖 URDF 正运动学。审计中 URDF 与控制器位姿在测量点处差异 RMS 约 1.4 mm，但换用控制器位姿只把误差降低约 0.17 mm。</li>
+  <li>方法 B 中相机位姿、双目尺度、激光射线和 URDF 误差可能互相补偿。2.39 mm 是整条链路在这批数据上的一致性，不代表每个部件都能达到这个精度。</li>
+</ul>
+
+<h2>6. 什么时候用哪种</h2>
+<div class="grid">
+  <div class="card a">
+    <h3>倾向方法 A</h3>
+    <ul>
+      <li>末端没有激光，或者需要相机与法兰的完整姿态关系（例如视觉抓取需要姿态）。</li>
+      <li>只有单目相机。</li>
+      <li>需要快速、样本少的标定。</li>
+    </ul>
+  </div>
+  <div class="card b">
+    <h3>倾向方法 B</h3>
+    <ul>
+      <li>任务本身是“相机看到一个点，让激光或工具点打过去”，需要的正是点位精度。</li>
+      <li>有双目或深度相机，并且能保证双目尺度准确。</li>
+      <li>不方便在末端贴 Tag，或 PnP 深度误差是主要瓶颈。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>整理自两个项目的源码与项目内的审计报告：AprilTag 方法来自 <code>robotcamcalib/extr_calib.py</code>，激光方法来自 <code>laser_calib</code>（<code>src/algorithms/</code> 与 <code>calibration/diagnostics/</code>）。2026-11-09。</footer>
+</main>
+</body>
+</html>

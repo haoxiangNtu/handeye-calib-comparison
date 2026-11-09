@@ -1,0 +1,189 @@
+{
+ "samples": {
+  "train": 28,
+  "validation": 8,
+  "far": 7
+ },
+ "controller_vs_urdf": {
+  "robot_configurations": 78,
+  "nominal_urdf": {
+   "translation_rms_mm": 1.6983229201161734,
+   "rotation_rms_deg": 0.233580912823553
+  },
+  "fit_7_joint_zeros": {
+   "translation_rms_mm": 1.4510740284956376,
+   "rotation_rms_deg": 0.14298581755237905
+  },
+  "fit_28_dh": {
+   "translation_rms_mm": 0.18379675415444077,
+   "rotation_rms_deg": 0.031064808381247783
+  },
+  "fit_28_dh_plus_base_and_flange_frames": {
+   "translation_rms_mm": 0.0002838860625676763,
+   "rotation_rms_deg": 5.392632286272869e-05
+  },
+  "fit_on_half_tested_on_other_half": {
+   "translation_rms_mm": 0.00031798972628551314,
+   "rotation_rms_deg": 5.6976844692365246e-05
+  }
+ },
+ "two_solvers_same_28_samples": {
+  "camera_position_difference_mm": 15.382946264838779,
+  "camera_orientation_difference_deg": 1.7721692559172086,
+  "laser_direction_difference_deg": 1.4418451660235625,
+  "laser_origin_difference_mm": 2.238376662612592,
+  "fit_rms_mm": {
+   "active": 3.489462855513208,
+   "v2_raw_3d": 4.409738447051396
+  }
+ },
+ "camera_only_planarity": {
+  "train28_rms_mm": 2.0561963891597834,
+  "train28_max_mm": 5.2084294594348375,
+  "held_out_vs_train_plane_rms_mm": {
+   "val8": 2.485949674092685,
+   "far7": 2.4935239295499154
+  },
+  "depth_mm_per_disparity_px": [
+   3.2416887696486865,
+   4.591891763036128
+  ],
+  "equivalent_disparity_error_px": 0.7064405187146815
+ },
+ "robot_laser_only_planarity": {
+  "pose_diversity": {
+   "laser_tilt_deg": [
+    1.6723695510865129,
+    26.830954262614988
+   ],
+   "range_mm": [
+    163.301,
+    234.087
+   ]
+  },
+  "ray_as_given_train28_rms_mm": {
+   "controller_pose__ray_active": 1.027671873326475,
+   "urdf_fk__ray_active": 1.1932383157269355,
+   "controller_pose__ray_v2": 0.70310976324603,
+   "urdf_fk__ray_v2": 0.8460127518734284
+  },
+  "fit_plate_and_ray_direction": {
+   "parameters": 5,
+   "train_rms_mm": 0.630254082691864,
+   "val8_rms_mm": 0.4334816066515466,
+   "far7_rms_mm": 0.7597921735374593,
+   "leave_one_out_rms_mm": 0.7702771697247288
+  },
+  "fit_plate_and_full_ray": {
+   "parameters": 8,
+   "train_rms_mm": 0.5880495717449873,
+   "val8_rms_mm": 0.4048721358719588,
+   "far7_rms_mm": 0.4840583611152953,
+   "leave_one_out_rms_mm": 0.8205214784646716
+  },
+  "fit_plate_ray_and_joint_zeros": {
+   "parameters": 13,
+   "train_rms_mm": 0.20530064900240494,
+   "val8_rms_mm": 0.5982473333294525,
+   "far7_rms_mm": 0.5984776533574572,
+   "leave_one_out_rms_mm": 0.3412534211868381,
+   "joint_zero_J2_J6_deg": [
+    0.029362061672478942,
+    -0.2127731063335692,
+    0.056478587081177395,
+    0.03442506433614593,
+    0.0013566903096846395
+   ],
+   "joint_zero_posterior_std_deg": [
+    0.03443873728223836,
+    0.06277795983330936,
+    0.15673043813469337,
+    0.19217636592996054,
+    0.16570331556481133
+   ],
+   "joint_zero_prior_std_deg": 0.2
+  },
+  "fixed_orientation_scans": {
+   "20261109_fixed_grid_240mm_scan": {
+    "points": 20,
+    "area_mm": [
+     376.02074555753666,
+     264.67191399929203
+    ],
+    "plane_rms_mm": 0.34957716331969263,
+    "plane_max_mm": 0.7071474985200256
+   },
+   "20261109_quadratic_correction_240mm": {
+    "points": 12,
+    "area_mm": [
+     276.12235449072307,
+     184.3003754009497
+    ],
+    "plane_rms_mm": 0.1315557322630221,
+    "plane_max_mm": 0.2583301560525938
+   }
+  }
+ },
+ "camera_vs_robot_scale": {
+  "train28__ray_active": {
+   "rigid_rms_mm": 3.449574784595814,
+   "uniform_scale": {
+    "camera_scale_error_pct": 2.3191406250000006,
+    "bootstrap_std_pct": 0.40464275051467197,
+    "rms_mm": 2.939519429424276
+   },
+   "depth_and_lateral": {
+    "depth_only_pct": 6.987607115904685,
+    "depth_only_std_pct": 1.9014059771450744,
+    "uniform_pct": 1.158392775784604,
+    "uniform_std_pct": 0.2992879820736628,
+    "rms_mm": 2.7075704383793022
+   }
+  },
+  "train28__ray_v2": {
+   "rigid_rms_mm": 3.5766240324921657,
+   "uniform_scale": {
+    "camera_scale_error_pct": 2.5049804687500012,
+    "bootstrap_std_pct": 0.40111392888552966,
+    "rms_mm": 2.9983939500456778
+   },
+   "depth_and_lateral": {
+    "depth_only_pct": 7.449565995944636,
+    "depth_only_std_pct": 2.05959660315487,
+    "uniform_pct": 1.270604769928954,
+    "uniform_std_pct": 0.25757002113369476,
+    "rms_mm": 2.7407692292840125
+   }
+  },
+  "all43__ray_active": {
+   "rigid_rms_mm": 3.9090010773027024,
+   "uniform_scale": {
+    "camera_scale_error_pct": 2.3244140625000007,
+    "bootstrap_std_pct": 0.3940473083388006,
+    "rms_mm": 3.292961253902656
+   },
+   "depth_and_lateral": {
+    "depth_only_pct": 7.624863083526693,
+    "depth_only_std_pct": 1.4597304747291349,
+    "uniform_pct": 0.8074445611242204,
+    "uniform_std_pct": 0.27036326150914736,
+    "rms_mm": 2.9481359918113377
+   }
+  },
+  "all43__ray_v2": {
+   "rigid_rms_mm": 3.9577298735896402,
+   "uniform_scale": {
+    "camera_scale_error_pct": 2.4503906250000007,
+    "bootstrap_std_pct": 0.36696179345950614,
+    "rms_mm": 3.2761061786224466
+   },
+   "depth_and_lateral": {
+    "depth_only_pct": 7.400098706833102,
+    "depth_only_std_pct": 1.4314091666120718,
+    "uniform_pct": 0.9797211911676108,
+    "uniform_std_pct": 0.2252566414266599,
+    "rms_mm": 2.9518011673241586
+   }
+  }
+ }
+}

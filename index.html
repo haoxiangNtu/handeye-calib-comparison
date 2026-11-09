@@ -91,6 +91,18 @@ ol li,ul li{margin:4px 0}
 .bar.a i{background:var(--a)} .bar.b i{background:var(--b)}
 td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .callout{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--fg);border-radius:8px;padding:12px 16px;margin:16px 0}
+.layers{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin:16px 0}
+.layer-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:720px){.layer-row{grid-template-columns:minmax(0,1fr)}}
+.layer{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--muted);border-radius:10px;padding:12px 14px}
+.layer.final{border-top-color:var(--est)}
+.layer b{display:block;font-size:16px;margin-bottom:2px}
+.layer span{display:block;font-size:14px;color:var(--muted);line-height:1.55}
+.layer .who{display:inline-block;margin-top:6px;font-size:12.5px;padding:0 8px;border-radius:999px;background:var(--code);color:var(--fg)}
+.layer-join{text-align:center;color:var(--muted);font-size:13px;padding:2px 0}
+.stack{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin:12px 0}
+.stack .card ol,.stack .card ul{margin:6px 0 0;padding-left:22px}
+td.yes{font-weight:600} td.no{color:var(--muted)}
 footer{margin-top:56px;color:var(--muted);font-size:14px}
 </style>
 <script type="importmap">
@@ -268,6 +280,7 @@ $$T_{\text{base}}^{\text{cam}}\;p^{\text{cam}}_i \;=\; T_{\text{base}}^{\text{fl
 <h2>5. 实测情况与注意事项</h2>
 <ul>
   <li><b>2026-11-09 更新：</b>相机位置检查后用 28 组新样本重新标定并上线，训练 RMS 3.49 mm，8 组冻结验证 RMS 3.87 mm（最大 6.87 mm）。新的重投影 + 板面联合求解器（v2）在近场验证降到 3.40 mm，但远场变差，暂作候选、未上线。v2 仍未把机械臂运动学误差作为参数（见第 7 节）。</li>
+  <li><b>2026-11-09 下午：</b>同事做了打靶验证（相机选一个目标点，机械臂把激光打过去，再用相机量偏差）。固定姿态、240 mm 距离下，板面内误差 RMS 2.6–2.7 mm。在同一姿态下拟合一个二次修正面后，12 个独立点降到 0.49 mm；这个修正面只在该姿态、该距离、网格范围内有效。针对这种情况的分层方案见第 8 节。</li>
   <li>此前一版激光方案结果（19 个样本，均采自当时相机最后一次移动之后）：拟合 RMS 2.39 mm，留一 RMS 2.70 mm，时间留出 RMS 2.15 mm，独立无运动复测约 2.3 mm。</li>
   <li>用小板单 Tag 方法得到的相机外参代入同一批激光数据，单目约 15.6 mm、双目约 12.7 mm。但同一批小板数据中，两组姿态反推的法兰到 Tag 变换相差约 12 mm、4.4°，说明那次小板实验本身存在系统偏差。这个数字只能说明那一次实验的结果，<b>不能当作“传统方法普遍更差”的结论</b>。</li>
   <li>激光方案的样本点都落在同一块桌面板上。刚体配准在数学上可解，但对远离板面的位置，精度是外推出来的，还需要在不同高度的空间点上做验证。</li>
@@ -445,15 +458,256 @@ $$\theta_{\text{实际}} = \theta_{\text{读数}} + \delta,$$
 <p class="note">分析为线性化结果，只考虑了关节零位（未含连杆长度、负载变形），噪声水平是假设值。脚本和结果在仓库的 <code>analysis/</code> 目录中，只读取记录数据，不连接任何硬件。</p>
 
 <h3>7.9 想真正解耦，需要分层、各自独立标定</h3>
+<p>这里是思路；带验收指标、仿真依据和实施顺序的完整方案见第 8 节。</p>
 <ol>
   <li><b>相机单独标：</b>不用机械臂。用精密刚性标定物，在多个距离和倾角下标内参和双目外参；再用已知长度的量块或两点距离检查尺度。这样相机误差就和机械臂无关了。</li>
-  <li><b>机械臂运动学单独标：</b>不用相机。最好用激光跟踪仪；没有的话，可以利用 B 方案现有的硬件：让激光在<b>多个不同姿态</b>下测<b>同一块精密平面</b>（最好是多块不同朝向的平面），所有测点必须共面。这个约束只涉及机械臂和激光，可以解出激光射线和关节零位，完全不经过相机。</li>
+  <li><b>机械臂运动学单独标：</b>不用相机。最好用激光跟踪仪；没有的话，可以利用 B 方案现有的硬件：让激光在<b>多个不同姿态</b>下测<b>同一块精密平面</b>，所有测点必须共面。仿真显示：只标关节零位时一块平面就够，前提是姿态足够多样；要标连杆长度和扭角时，才需要把平板换成 3 种以上的朝向（见 8.4）。这个约束只涉及机械臂和激光，可以解出激光射线和关节零位，完全不经过相机。</li>
   <li><b>最后标外参：</b>相机模型和机械臂模型都固定后，只剩 6 个外参，残差中剩下的才是真正的外参误差和测量噪声。</li>
   <li><b>基座和外部世界对齐（如需要）：</b>在工作台上设几个精确已知位置的参考点，用机械臂去碰、用相机去看，才能确定基座的整体偏差。</li>
   <li><b>采样设计：</b>增加姿态数，并让各个关节都有大幅度转动；B 方案还要加入不同高度的目标，不要全部落在一块板上。采集前可以先用 <code>analysis/identifiability.py</code> 的方法检查计划姿态的可辨识性。</li>
 </ol>
 
-<footer>整理自两个项目的源码与项目内的审计报告：AprilTag 方法来自 <code>robotcamcalib/extr_calib.py</code>，激光方法来自 <code>laser_calib</code>（<code>src/algorithms/</code> 与 <code>calibration/diagnostics/</code>）。2026-11-09。</footer>
+<h2>8. 分层解耦标定方案（设计稿）</h2>
+<p>目标：把相机、激光测距、机械臂和激光射线、手眼外参分成四层，每层用一个互不相干的物理基准单独标定。前一层通过验收后冻结，后一层不许再改它；最后一层只剩 6 个外参，再用没参与任何一层的数据做验证。这样任何一层的误差都没有地方可藏。</p>
+<p>本节的数字有三个来源，文中分别注明：<code>laser_calib</code> 在 2026-11-09 已经采集的样本（只读、离线分析）；在 xArm7 URDF 上做的仿真；按几何关系做的估算。方案本身还没有在硬件上执行过。</p>
+
+<h3>8.1 现有数据已经说明的事</h3>
+<p>下面每一项都只用已经录好的数据。第 2、3、5 项各只用到一套测量系统，所以结果不会被另一套系统吸收。</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>检查</th><th style="min-width:7.5em">用到的设备</th><th>结果</th></tr></thead>
+  <tbody>
+    <tr><td>两个求解器比结果</td><td>相机、机械臂、激光</td><td>同一批 28 组样本，当前生效的模型和 v2 候选模型求出的相机位置相差 15.4 mm、朝向相差 1.77°，激光方向相差 1.44°，而两者的拟合残差都在 3.5–4.4 mm。这些参数在互相补偿，数据定不住其中任何一个。</td></tr>
+    <tr><td>相机单独</td><td>只有相机</td><td>28 个三角化光点本应落在同一块板上，对最佳平面的残差 RMS 2.06 mm（最大 5.2 mm），相当于约 0.7 px 的视差误差。</td></tr>
+    <tr><td>机械臂 + 激光单独</td><td>没有相机</td><td>同样 28 个点，用控制器位姿和测距值算出，只拟合激光方向，对平面的残差 RMS 0.63 mm（留一 0.77 mm，8 个验证点 0.43 mm）。法兰姿态不变、只平移时更小：下午的两次网格扫描里，276 × 184 mm 范围内 0.13 mm，376 × 265 mm 范围内 0.35 mm。</td></tr>
+    <tr><td>相机对机械臂的尺度</td><td>相机、机械臂、激光</td><td>相机量出的距离比机械臂 + 激光量出的整体大 2.3% ± 0.4%。拆成两个方向：横向约 1.2% ± 0.3%，深度方向还要再多约 7% ± 2%。11-06 的审计用另一个独立参照（大板的标称尺寸 446 × 448 mm）也得到相机偏大 1.7%，不过板的实际跨度还没有用尺子量过。</td></tr>
+    <tr><td>控制器位姿对 URDF</td><td>只有机械臂</td><td>78 个构型上，名义 URDF 的正运动学与控制器报告的位姿相差 1.70 mm / 0.23°（RMS）。只调 7 个关节零位解释不了（仍差 1.45 mm）；放开全部连杆参数和基座、法兰坐标系后完全吻合（0.0003 mm，用一半构型拟合、另一半检验，结果相同）。控制器内部用的是另一套固定的运动学参数。SDK 1.18.4 提供 <code>get_dh_params()</code>（要求固件 2.0.0 以上），应当可以直接读出，还没有实际调用过。</td></tr>
+    <tr><td>固定姿态二次修正</td><td>相机、机械臂、激光</td><td>同事在固定姿态、240 mm 距离下拟合的二次修正面，把打靶误差从 2.73 mm 降到 0.49 mm（12 个独立点）。误差的绝大部分是平滑的系统误差，不是随机噪声。</td></tr>
+  </tbody>
+</table>
+</div>
+<p>由此得到四点判断：</p>
+<ol>
+  <li>在能单独检验的方向（板面法向）上，相机的误差（约 2 mm）是机械臂 + 激光（0.4–0.8 mm）的 3 倍左右。</li>
+  <li>相机的尺度是目前最大的单项嫌疑：两个互相独立的参照都指向偏大约 2%。原因很可能在双目标定本身：当时用的 6 × 6 小网格板只有 16.5 cm 宽，在画面里很小，焦距和距离几乎分不开。</li>
+  <li>机械臂 + 激光的误差主要在换姿态时出现（0.63 mm），只平移时很小（0.13–0.35 mm）。这部分对应激光射线和腕部关节，正好是平面约束法能标的量。</li>
+  <li>误差以系统性的为主，所以可以靠把每一层的模型标准来消除，不必依赖只在固定姿态下有效的修正面。</li>
+</ol>
+<p class="note">局限：平面检验只能看到沿板面法向的误差分量；尺度比较同时用到了两套系统，只能当线索，要由第 1 层用独立标尺确认；大板本身的平面度没有单独量过，0.13–0.35 mm 是它的上限。</p>
+
+<h3>8.2 分层结构</h3>
+<div class="layers">
+  <div class="layer-row">
+    <div class="layer"><b>第 1 层　相机</b><span>求：两目内参、双目外参（基线）</span><span>基准：标定板的实测尺寸</span><span class="who">只用相机</span></div>
+    <div class="layer"><b>第 2 层　激光测距</b><span>求：测距的比例和零点</span><span>基准：量块的厚度</span><span class="who">只用激光，机械臂不动</span></div>
+    <div class="layer"><b>第 3 层　机械臂 + 激光射线</b><span>求：激光射线、关节 2–6 零位</span><span>基准：一块平板的平整度</span><span class="who">不用相机，需要第 2 层的结果</span></div>
+  </div>
+  <div class="layer-join">▼　三层各自通过验收并冻结</div>
+  <div class="layer final"><b>第 4 层　手眼外参</b><span>求：相机相对机械臂基座的位姿，只有 6 个数</span><span>没有新基准：把前三层已经标好的两套测量系统对齐</span></div>
+  <div class="layer-join">▼</div>
+  <div class="layer"><b>第 5 层　独立验证</b><span>不求任何参数：打靶、留出点、长度检验，全部使用没参与前四层的数据</span></div>
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>层</th><th>未知量个数</th><th>验收指标（只用本层的设备）</th><th>现状</th></tr></thead>
+  <tbody>
+    <tr><td>1 相机</td><td>每目 9 个内参，加双目外参 6 个</td><td>留出图像重投影 ≤ 0.3 px；已知长度在多个深度、多个方向（含沿深度方向）上的误差 ≤ 0.2%</td><td>重投影 0.58–0.62 px；尺度疑似偏大约 2%</td></tr>
+    <tr><td>2 激光测距</td><td>2 个，必要时加二次项</td><td>130–270 mm 内线性残差 ≤ 0.05 mm</td><td>零点取自一根标称 200 mm 的 3D 打印管，管长没有实测；250 mm 处的核对读数偏 0.3–0.5 mm 且在漂移，当时没有采用</td></tr>
+    <tr><td>3 机械臂 + 射线</td><td>射线 5 个，关节零位 5 个，每种平板摆法另加 3 个辅助量</td><td>留出姿态的平面残差 ≤ 0.2 mm，并且和入射角、量程、关节角都不相关</td><td>换姿态时 0.63 mm；射线方向在不同求解器之间相差 1.44°</td></tr>
+    <tr><td>4 手眼外参</td><td>6 个</td><td>重投影残差接近光点提取噪声（≤ 0.6 px），残差图上没有成片的规律</td><td>和射线、板面等参数一起解，共 11–14 个未知量</td></tr>
+    <tr><td>5 验证</td><td>0</td><td>不加任何修正面：板面内打靶 RMS ≤ 0.8 mm（任意姿态、多个高度）</td><td>2.7 mm；固定姿态加修正面后 0.49 mm</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>8.3 每一层怎么做</h3>
+<div class="stack">
+  <div class="card">
+    <h3>开始之前的约定</h3>
+    <ul>
+      <li>机械臂位姿统一用控制器报告的值，或者把 <code>get_dh_params()</code> 读出的参数写进自己的正运动学。不再用名义 URDF 算位姿，URDF 只用来求“关节角变一点，位姿变多少”这种微分关系。</li>
+      <li>原理上分不开的量按 8.5 的约定取固定值。</li>
+      <li>采集前机械臂预热 20–30 分钟；TCP 偏移和 world 偏移保持为 0；相机的对焦和曝光锁定。</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>第 1 层　相机</h3>
+    <ol>
+      <li><b>先量板。</b>用钢尺或卡尺实测标定板最外侧 Tag 边界之间的跨度（大板的标称值是 446 × 448 mm）。这是整条尺度链的源头，也是 11-06 审计报告里还没做的那一项。</li>
+      <li><b>采 30–40 对图。</b>板至少占画面宽度的三分之一；位置覆盖画面四角和边缘；距离从 0.4 m 到 0.9 m 取几档；板要倾斜到 30–45°，这样才能把焦距和距离分开。</li>
+      <li><b>重新标定</b>两目内参和双目外参。镜头视场约 105°，如果 5 个畸变系数的残差沿径向有规律，就换成 8 系数的有理模型。</li>
+      <li><b>只用相机验收。</b>取板上相距 300 mm 以上的两个角点，在 3 个深度、3 个方向（横、竖、沿深度方向倾斜）上比较三角化距离和实测距离；再看三角化角点对平面的残差（目标 ≤ 0.5 mm）。</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>第 2 层　激光测距</h3>
+    <ol>
+      <li>机械臂停在一个姿态不动，只当支架。激光垂直打在平板上，读数在量程远端（约 270 mm）。</li>
+      <li>依次垫入量块或 1-2-3 块的组合，让读数每 10–20 mm 一个点，覆盖 130–270 mm。每点读 100 次以上取平均，来回各做一遍，检查漂移。</li>
+      <li>拟合“真实距离 = a × 读数 + b”，看残差是否需要加二次项。</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>第 3 层　机械臂 + 激光射线（平面约束法）</h3>
+    <p>全程不开相机。激光在很多姿态下打同一块平板，每个测点都必须落在同一个平面上：</p>
+    $$r_i = \mathbf n_k^{\top}\big[\,\mathrm{FK}(q_i+\delta)\,(\mathbf o + d_i\,\mathbf u)\,\big] - c_k$$
+    <p>\(\mathbf o, \mathbf u\) 是激光射线，\(\delta\) 是关节零位修正，\(\mathbf n_k, c_k\) 是第 \(k\) 种平板摆法的平面参数。平板放在哪里、是否水平都不需要事先知道，只要求它平，并且在一组采集中不动。</p>
+    <ol>
+      <li><b>平板。</b>第一轮可以直接用现有大板的中央区域：只平移的扫描显示，276 × 184 mm 范围内机械臂 + 激光看到的平面残差只有 0.13 mm。正式标定用精密平板（300 × 300 mm 以上，平面度 ≤ 0.05 mm，哑光浅色表面；玻璃要贴或喷一层哑光层）。</li>
+      <li><b>60 个姿态。</b>激光读数 130–270 mm，入射角 ≤ 30°。关键是换构型：同一个落点用不同的肘部高度和腕部翻转去打，绕激光射线转动关节 7，改变倾角。姿态由脚本从可行集合里按信息量最大的原则自动挑选。</li>
+      <li><b>分三步求解，逐步放开。</b>
+        <ul>
+          <li>第一步只拟合射线和平板。残差就是“机械臂在换姿态时的误差”的直接读数。如果 ≤ 0.2 mm，机械臂不需要修正，到此为止。</li>
+          <li>否则加入关节 2–6 零位。要求留出的 20% 姿态残差明显下降，并且修正量大于 3 倍标准差，才采用。</li>
+          <li>仍不达标，再扩展到连杆长度和扭角。这时同一块平板要换 3 种以上摆法（平放、朝机械臂斜靠约 40°、侧向斜靠约 40°），姿态增加到 120 个以上。</li>
+        </ul>
+      </li>
+      <li><b>修正量的用法。</b>叠加在控制器位姿上：
+        $$T_{\text{修正}}(q) = \mathrm{FK}(q+\delta)\,\mathrm{FK}(q)^{-1}\,T_{\text{控制器}}(q)$$
+        不建议用 <code>set_dh_params()</code> 写回控制器，那会改变机械臂本身的运动，需要厂家指导。</li>
+    </ol>
+    <p class="note">姿态清单执行前必须先过一遍你们自己的运动规划和碰撞检查。仿真里的可行性筛选很粗：只检查了关节限位、离桌面和平板的距离、避开相机立柱的包围盒。</p>
+  </div>
+  <div class="card">
+    <h3>第 4 层　手眼外参</h3>
+    <ol>
+      <li>前三层的结果全部冻结。激光点同时被双目看到，残差沿用 v2 求解器的像素域形式（左目 x、y 和右目 x），但只放开 6 个外参。</li>
+      <li>采 40 个以上的点，分布在 3 个以上的高度（板面、垫高约 100 mm、垫高约 200 mm），覆盖工作区四角。</li>
+      <li>这一层的残差不再是藏误差的地方，而是对前三层的检验。残差明显大于 0.6 px 或者有规律时，按规律回到对应的层：从画面中心向外放大或缩小，回第 1 层；随机械臂姿态变化，回第 3 层；随激光读数变化，回第 2 层。</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>第 5 层　独立验证</h3>
+    <ul>
+      <li>留出点 15 个以上，取不同高度、随机姿态：比较相机三角化的位置和机械臂 + 激光算出的位置。</li>
+      <li>打靶（沿用同事下午的流程）：在 3 个以上的高度、随机倾角下进行，不加任何经验修正面。</li>
+      <li>分层之后再拟合一次二次修正面，幅值应该降到 0.3 mm 以下。如果还有毫米级的平滑项，说明某一层没有做好。</li>
+    </ul>
+  </div>
+</div>
+
+<h3>8.4 仿真依据</h3>
+<p><b>第 3 层：一块平板、60 个姿态够不够。</b>在 xArm7 的 URDF 上随机生成满足量程、入射角和避障条件的姿态，假设每个测点沿平面法向的噪声为 0.15 mm（重复定位、激光和平板平面度合计；结果随噪声成正比变化）。“点位误差”是把标定结果的不确定度传到 11-09 实际用过的 51 个姿态的激光点上，扣除整体平移和旋转（那部分由外参吸收）之后的 RMS。</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>采集方案</th><th>姿态数</th><th>关节 2–6 零位 1σ（最差的关节）</th><th>射线方向 1σ</th><th>点位误差</th></tr></thead>
+  <tbody>
+    <tr><td>11-09 实际姿态，同一块板</td><td class="num">51</td><td class="num">0.15°</td><td class="num">0.55°</td><td class="num">0.58 mm</td></tr>
+    <tr><td>一块平板</td><td class="num">30</td><td class="num">0.015–0.028°</td><td class="num">0.10°</td><td class="num">0.18–0.25 mm</td></tr>
+    <tr><td>一块平板</td><td class="num">60</td><td class="num">0.010–0.015°</td><td class="num">0.07°</td><td class="num">0.12–0.15 mm</td></tr>
+    <tr><td>一块平板</td><td class="num">120</td><td class="num">0.007–0.010°</td><td class="num">0.05°</td><td class="num">0.09–0.10 mm</td></tr>
+    <tr><td>一块平板，保守关节范围</td><td class="num">60</td><td class="num">0.015–0.031°</td><td class="num">0.07°</td><td class="num">0.13–0.19 mm</td></tr>
+    <tr><td>同一块板换 3 种摆法</td><td class="num">60</td><td class="num">0.011–0.017°</td><td class="num">0.07°</td><td class="num">0.12–0.17 mm</td></tr>
+  </tbody>
+</table>
+</div>
+<p>每格的两个数分别对应“按信息量挑选姿态”和“随机挑选姿态”（20 次的中位数）；射线方向一列是按信息量挑选的结果。“保守关节范围”指只在 11-09 已经用过的关节范围两侧各放宽 15° 内取姿态。几点结论：</p>
+<ul>
+  <li>现有的姿态定不住腕部关节（±0.05–0.15°）和射线方向（±0.55°），因为倾角只有 2–27°，构型变化也少。姿态多样之后，同样一块板就能把关节零位定到 ±0.01–0.03°，射线方向定到 ±0.07°。</li>
+  <li><b>只标关节零位时，一块平板就够</b>，换 3 种摆法没有明显好处。7.9 节早先说“最好用多块不同朝向的平面”，对这个模型并不成立，已改正。</li>
+  <li>要标全部连杆长度和扭角时，单块平板不够：会多出 2 个看不见的参数组合，求解病态。换成 3 种摆法后只剩原理上分不开的 6 个（见 8.5），120 个姿态时点位误差 0.13 mm，240 个时 0.09 mm；但单个连杆参数只能定到 ±0.2–0.3 mm、±0.03–0.04°。</li>
+</ul>
+<p><b>完整走一遍的蒙特卡洛验证</b>（非线性求解，40 次）：给机械臂加上随机的关节零位误差（每个关节的标准差 0.05°）和射线偏差（标准差 1°、2 mm），平板的位置和倾斜未知，再加 0.15 mm 噪声，用一块平板、60 个姿态求解。</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>真值里包含的误差</th><th>标定前</th><th>只标射线</th><th>射线 + 关节零位</th></tr></thead>
+  <tbody>
+    <tr><td>只有关节零位</td><td class="num">1.35 mm</td><td class="num">0.58 mm</td><td class="num">0.12 mm</td></tr>
+    <tr><td>再加没有建模的连杆误差（0.1 mm、0.01°）</td><td class="num">1.25 mm</td><td class="num">0.64 mm</td><td class="num">0.23 mm</td></tr>
+  </tbody>
+</table>
+</div>
+<p>表中是 51 个实际姿态上的点位误差（同样扣除整体平移旋转）。求出的关节零位和真值相差 0.002–0.011°，和线性分析的预测一致。有未建模的连杆误差时，结果停在约 0.2 mm，增加姿态或平板摆法也不再下降，这是关节零位模型本身的极限。</p>
+
+<p><b>第 4 层：只解 6 个外参能到多准，为什么要垫高采点。</b>假设每个图像坐标的噪声为 0.6 px，下表是单由外参不确定度造成的点位误差。</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>采点方案</th><th>板面中心</th><th>板面角上</th><th>板面上方 150 mm</th><th>板面上方 300 mm</th></tr></thead>
+  <tbody>
+    <tr><td>28 个点，全在板面（11-09 的做法）</td><td class="num">0.44 mm</td><td class="num">0.56 mm</td><td class="num">0.68 mm</td><td class="num">1.18 mm</td></tr>
+    <tr><td>板面 28 个，垫高 100 mm、200 mm 各 10 个</td><td class="num">0.25 mm</td><td class="num">0.30 mm</td><td class="num">0.27 mm</td><td class="num">0.38 mm</td></tr>
+  </tbody>
+</table>
+</div>
+<p><b>为什么第 1 层必须排在前面。</b>如果相机尺度不对就直接拟合外参，外参会挪动相机的位置去迁就，板面上的残差看起来不大，离开板面误差就放大：</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>相机模型的误差</th><th>板面上的拟合残差</th><th>求出的相机位置偏移</th><th>板面角上</th><th>上方 150 mm</th><th>上方 300 mm</th></tr></thead>
+  <tbody>
+    <tr><td>基线偏大 1%</td><td class="num">0.76 mm</td><td class="num">5.9 mm</td><td class="num">1.2 mm</td><td class="num">1.5 mm</td><td class="num">3.0 mm</td></tr>
+    <tr><td>基线偏大 2.4%</td><td class="num">1.83 mm</td><td class="num">14.1 mm</td><td class="num">3.0 mm</td><td class="num">3.6 mm</td><td class="num">7.2 mm</td></tr>
+    <tr><td>焦距偏大 2%</td><td class="num">0.42 mm</td><td class="num">12.9 mm</td><td class="num">0.7 mm</td><td class="num">3.4 mm</td><td class="num">6.8 mm</td></tr>
+  </tbody>
+</table>
+</div>
+<p>焦距误差尤其隐蔽：板面上只留下 0.4 mm 残差，上方 300 mm 处却有近 7 mm。8.1 里两个求解器的相机位置相差 15 mm，和这里的量级相符。</p>
+
+<h3>8.5 原理上分不开的量，以及约定</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>分不开的量</th><th>和谁重合</th><th>约定</th></tr></thead>
+  <tbody>
+    <tr><td>基座位姿、关节 1 零位</td><td>手眼外参</td><td>不单独求，由第 4 层的外参吸收</td></tr>
+    <tr><td>关节 7 零位</td><td>激光射线绕法兰轴线的旋转</td><td>取 0，由射线吸收；换工具后重标工具</td></tr>
+    <tr><td>测距零点</td><td>射线原点沿射线方向的分量</td><td>零点取第 2 层的值，其余由射线原点吸收</td></tr>
+    <tr><td>全连杆模型里的 d<sub>1</sub>、a<sub>1</sub>、α<sub>1</sub>、d<sub>7</sub></td><td>基座位姿、射线原点</td><td>取名义值</td></tr>
+  </tbody>
+</table>
+</div>
+<p>仿真中，自由参数的零空间正好是这几个，没有别的。它们都不影响“相机看到一个点，机械臂去够”这个用途。只有基座需要和外部坐标（CAD、另一台机械臂）对齐时，才要另外引入外部参考点。</p>
+
+<h3>8.6 什么变了，重做哪一层</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>发生的事</th><th>第 1 层</th><th>第 2 层</th><th>第 3 层</th><th>第 4 层</th><th>第 5 层</th></tr></thead>
+  <tbody>
+    <tr><td>相机或立柱被碰、被挪动</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">重做</td><td class="yes">重做</td></tr>
+    <tr><td>相机调焦、换镜头、改分辨率</td><td class="yes">重做</td><td class="no">—</td><td class="no">—</td><td class="yes">重做</td><td class="yes">重做</td></tr>
+    <tr><td>激光器在支架里动了，或支架重装</td><td class="no">—</td><td class="no">—</td><td class="yes">只重标射线</td><td class="no">—</td><td class="yes">重做</td></tr>
+    <tr><td>更换激光器</td><td class="no">—</td><td class="yes">重做</td><td class="yes">只重标射线</td><td class="no">—</td><td class="yes">重做</td></tr>
+    <tr><td>机械臂碰撞、维修、更换关节</td><td class="no">—</td><td class="no">—</td><td class="yes">重做</td><td class="yes">重做</td><td class="yes">重做</td></tr>
+    <tr><td>机械臂底座相对相机移动</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">重做</td><td class="yes">重做</td></tr>
+    <tr><td>定期复查</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">重做</td></tr>
+  </tbody>
+</table>
+</div>
+<p>现在的做法里所有参数一起解，任何一处变化都得整套重来。分层之后，最常见的情况（相机被碰）只需要重做第 4 层：6 个未知量，约 40 个点。</p>
+
+<h3>8.7 预期精度</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>误差项</th><th>板面内打靶</th><th>依据</th></tr></thead>
+  <tbody>
+    <tr><td>相机单次观测</td><td class="num">约 0.4 mm</td><td>估算：0.5 px × 0.8 mm/px</td></tr>
+    <tr><td>第 1 层之后残余的尺度误差</td><td class="num">约 0.3 mm</td><td>估算：0.2% × 150 mm（工作区半宽）</td></tr>
+    <tr><td>第 3 层之后的机械臂 + 激光</td><td class="num">约 0.2 mm</td><td>仿真：0.12–0.23 mm</td></tr>
+    <tr><td>第 4 层的外参</td><td class="num">约 0.3 mm</td><td>仿真：0.25–0.30 mm（多高度采点）</td></tr>
+    <tr><td>机械臂重复定位</td><td class="num">约 0.1 mm</td><td>标称值</td></tr>
+    <tr><td>合计（平方和开方）</td><td class="num">约 0.6 mm</td><td>同事在固定姿态下靠修正面做到 0.49 mm，量级一致</td></tr>
+  </tbody>
+</table>
+</div>
+<p>也就是说，分层的目标是在<b>任意姿态、多个高度</b>上达到修正面目前只在固定姿态下达到的水平，现在不加修正面是 2.7 mm。</p>
+<p>自由空间里的 3D 点要用到双目深度。0.58 m 处 0.4 px 的视差噪声就是约 1.5 mm，合计约 1.7 mm。要再往下，只能多帧平均，或者换焦距更长、分辨率更高、基线更宽的相机；标定解决不了单次观测的噪声。</p>
+
+<h3>8.8 实施顺序和需要准备的东西</h3>
+<ol>
+  <li><b>第 1 层，约半天。</b>收益最大，也不需要动机械臂。从量大板尺寸开始。</li>
+  <li><b>第 3 层的第一步检验，1–2 小时。</b>60 个多样姿态，不开相机，只拟合射线。得到机械臂换姿态时误差的直接读数，再决定要不要修正关节。可以和第 1 层同时进行。</li>
+  <li><b>第 2 层，约 1 小时。</b>要在第 3 层的正式求解之前完成。</li>
+  <li><b>第 4 层和第 5 层，1–2 小时。</b></li>
+</ol>
+<p>需要准备：钢尺或卡尺；量块或 1-2-3 块；一块精密平板（第一轮可用现有大板的中央区域代替）；垫高用的等高块。</p>
+
+<h3>8.9 和现有工作的关系、局限</h3>
+<ul>
+  <li><b>v2 求解器</b>的像素域重投影残差可以直接作为第 4 层的求解器，只放开 6 个外参即可；去掉相机项、加上关节零位，就是第 3 层的求解器。</li>
+  <li><b>二次修正面</b>保留为第 5 层的检验工具，不再作为主要的精度来源。</li>
+  <li><b>11-06 审计报告</b>里“实测大板跨度”的待办，就是第 1 层的第一步。报告里“拟合关节零偏没有稳定改善”的结论和这里一致：用当时的姿态确实定不住，需要换姿态设计，而不是换算法。</li>
+</ul>
+<p class="note">局限：第 3、4 层的精度是仿真预测，依赖 0.15 mm 和 0.6 px 的噪声假设；模型没有包含关节柔性、温度和激光在斜面上的读数偏差；8.1 的结论来自 28–78 个样本；相机尺度偏差的大小和成因要等第 1 层重标之后才能确定。所有预测都要由第 5 层的实测来确认。分析脚本和结果在仓库的 <code>analysis/</code> 目录：<code>decoupled_dryrun.py</code>（8.1）、<code>layer3_plate_sim.py</code>（第 3 层）、<code>layer4_extrinsic_sim.py</code>（第 4 层）。</p>
+
+<footer>整理自两个项目的源码与项目内的审计报告：AprilTag 方法来自 <code>robotcamcalib/extr_calib.py</code>，激光方法来自 <code>laser_calib</code>（<code>src/algorithms/</code>、<code>calibration/</code> 与 <code>data/</code> 下的记录）。2026-11-09。</footer>
 </main>
 </body>
 </html>

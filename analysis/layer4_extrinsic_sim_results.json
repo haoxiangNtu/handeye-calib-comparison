@@ -1,0 +1,80 @@
+{
+ "sigma_px": 0.6,
+ "designs": {
+  "28 spots, all on the board (today)": {
+   "n": 28,
+   "rot_std_deg": 0.2298744879817481,
+   "trans_std_mm": 2.229537112273757,
+   "point_std_mm": {
+    "on board, centre": 0.4442348657069673,
+    "on board, corner": 0.5625797815166955,
+    "150 mm above board": 0.6849861399230698,
+    "300 mm above board": 1.1766412364811818
+   }
+  },
+  "12 spots on the board": {
+   "n": 12,
+   "rot_std_deg": 0.3897574160748764,
+   "trans_std_mm": 3.8416711119039464,
+   "point_std_mm": {
+    "on board, centre": 0.7973101406719675,
+    "on board, corner": 0.9918236638012533,
+    "150 mm above board": 1.182994912282891,
+    "300 mm above board": 2.0113499017551786
+   }
+  },
+  "28 on board + 10 at +100 mm + 10 at +200 mm": {
+   "n": 48,
+   "rot_std_deg": 0.08039492807393503,
+   "trans_std_mm": 0.7308328325382226,
+   "point_std_mm": {
+    "on board, centre": 0.24721353892490186,
+    "on board, corner": 0.2985817569792289,
+    "150 mm above board": 0.27305489729248567,
+    "300 mm above board": 0.38009113541545253
+   }
+  },
+  "16 on board + 16 at +100 mm + 16 at +200 mm": {
+   "n": 48,
+   "rot_std_deg": 0.07262503519863582,
+   "trans_std_mm": 0.6200257034174418,
+   "point_std_mm": {
+    "on board, centre": 0.23548959807503048,
+    "on board, corner": 0.2704216742833897,
+    "150 mm above board": 0.22881440839243708,
+    "300 mm above board": 0.30723698349490686
+   }
+  }
+ },
+ "camera_single_shot": {
+  "depth_m": 0.5845461701071614,
+  "lateral_mm_per_px": 0.8015484180844596,
+  "depth_mm_per_px_disparity": 3.868627501533554
+ },
+ "scale_error": {
+  "baseline +1%": {
+   "fit_rms_mm": 0.7609005262992808,
+   "camera_shift_mm": 5.85853892293136,
+   "on board, centre": 1.3660327815169537e-13,
+   "on board, corner": 1.2281687702995938,
+   "150 mm above board": 1.4999999999998348,
+   "300 mm above board": 3.000000000000058
+  },
+  "baseline +2.4%": {
+   "fit_rms_mm": 1.8261612631181985,
+   "camera_shift_mm": 14.060493415035253,
+   "on board, centre": 2.167293837583677e-13,
+   "on board, corner": 2.9476050487187617,
+   "150 mm above board": 3.5999999999998256,
+   "300 mm above board": 7.199999999999818
+  },
+  "focal length +2%": {
+   "fit_rms_mm": 0.4150227458451873,
+   "camera_shift_mm": 12.863226362921791,
+   "on board, centre": 2.359479019930958e-14,
+   "on board, corner": 0.7031731169131862,
+   "150 mm above board": 3.399075100445357,
+   "300 mm above board": 6.798150200891026
+  }
+ }
+}

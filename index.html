@@ -11,17 +11,17 @@
 <style>
 :root{
   --bg:#fbfaf7; --fg:#1d1f23; --muted:#5d636d; --line:#dcd8cf; --card:#ffffff;
-  --a:#2f6db5; --a-soft:#e6eef8; --b:#b5482f; --b-soft:#f8ebe6; --code:#f1efe9;
+  --a:#2f6db5; --a-soft:#e6eef8; --b:#b5482f; --b-soft:#f8ebe6; --code:#f1efe9; --est:#d08a00; --laser:#e0262b;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#16181c; --fg:#e7e5e0; --muted:#a2a7af; --line:#33373e; --card:#1d2025;
-    --a:#7fb0ea; --a-soft:#1f2b3a; --b:#ec9a82; --b-soft:#3a2520; --code:#24272d;
+    --a:#7fb0ea; --a-soft:#1f2b3a; --b:#ec9a82; --b-soft:#3a2520; --code:#24272d; --est:#f2b84b; --laser:#ff5a5f;
   }
 }
 :root[data-theme="dark"]{
   --bg:#16181c; --fg:#e7e5e0; --muted:#a2a7af; --line:#33373e; --card:#1d2025;
-  --a:#7fb0ea; --a-soft:#1f2b3a; --b:#ec9a82; --b-soft:#3a2520; --code:#24272d;
+  --a:#7fb0ea; --a-soft:#1f2b3a; --b:#ec9a82; --b-soft:#3a2520; --code:#24272d; --est:#f2b84b; --laser:#ff5a5f;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
@@ -57,8 +57,40 @@ svg .unk{stroke-dasharray:6 4}
 svg .ta{fill:var(--a);font-weight:600} svg .tb{fill:var(--b);font-weight:600}
 .note{border-left:3px solid var(--line);padding:4px 14px;color:var(--muted);margin:16px 0}
 ol li,ul li{margin:4px 0}
+
+.viz-wrap{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:16px 0}
+.viz-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--fg);padding:7px 14px;font:inherit;font-size:14px;cursor:pointer}
+.seg button[aria-pressed="true"][data-method="A"]{background:var(--a);color:#fff}
+.seg button[aria-pressed="true"][data-method="B"]{background:var(--b);color:#fff}
+.btn{border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:8px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+.btn:hover,.seg button:hover{filter:brightness(1.08)}
+#viz{position:relative;width:100%;touch-action:none}
+#viz canvas{display:block}
+.viz-labels{position:absolute;top:0;left:0;pointer-events:none}
+.viz-lbl{font-size:12px;line-height:1.2;padding:1px 6px;border-radius:4px;background:color-mix(in srgb,var(--card) 82%,transparent);color:var(--fg);white-space:nowrap}
+.viz-lbl.muted{color:var(--muted)} .viz-lbl.a{color:var(--a);font-weight:600} .viz-lbl.b{color:var(--b);font-weight:600} .viz-lbl.est{color:var(--est);font-weight:600}
+.viz-panel{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;padding:14px;border-top:1px solid var(--line)}
+@media (max-width:720px){.viz-panel{grid-template-columns:1fr}}
+.ctl{display:grid;grid-template-columns:132px 1fr 64px;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.ctl input[type=range]{width:100%;accent-color:var(--a)}
+#viz[data-method="B"] ~ .viz-panel .ctl input[type=range]{accent-color:var(--b)}
+.ctl output{font-variant-numeric:tabular-nums;color:var(--fg);text-align:right}
+.checks{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--muted)}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line)}
+@media (max-width:720px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.metric{padding:12px 14px;border-right:1px solid var(--line)}
+.metric:last-child{border-right:0}
+.metric b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.metric span{font-size:12.5px;color:var(--muted)}
+.try{margin:8px 0 0;padding-left:20px} .try li{margin:6px 0}
 footer{margin-top:56px;color:var(--muted);font-size:14px}
 </style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module" src="viz.js"></script>
 </head>
 <body>
 <main>
@@ -78,6 +110,51 @@ footer{margin-top:56px;color:var(--muted);font-size:14px}
     <p>末端装激光位移传感器，把激光打在桌面板上的光斑当作标志点。双目三角化得到光斑的相机坐标，测距值加正运动学得到它的基座坐标，再做 3D–3D 刚体配准。</p>
   </div>
 </div>
+
+
+<h2>0. 交互式 3D 演示</h2>
+<p>拖动旋转、滚轮缩放、右键平移。上方切换两种方法；下方滑块改变测量误差，页面会<b>实时用对应算法重新求解</b>相机外参：方法 A 用 AX = YB（交替初值 + SE(3) 加权 Gauss–Newton），方法 B 用 Kabsch/SVD 点配准。橙色相机是估计结果，偏差按倍数放大显示，方便看清方向。</p>
+
+<div class="viz-wrap">
+  <div class="viz-bar">
+    <div class="seg" role="group" aria-label="选择方法">
+      <button data-method="A" aria-pressed="true">A · AprilTag</button>
+      <button data-method="B" aria-pressed="false">B · 激光</button>
+    </div>
+    <button class="btn" id="play">▶ 逐个播放样本</button>
+    <button class="btn" id="reseed">换一组随机姿态</button>
+    <button class="btn" id="reset-view">重置视角</button>
+  </div>
+  <div id="viz" data-method="A"></div>
+  <div class="metrics">
+    <div class="metric"><b id="m-res">–</b><span id="m-res-label">残差 RMS</span> <span>(mm)</span></div>
+    <div class="metric"><b id="m-pos">–</b><span>相机位置误差 (mm)</span></div>
+    <div class="metric"><b id="m-rot">–</b><span>相机姿态误差 (°)</span></div>
+    <div class="metric"><b id="m-on">–</b><span>测试点 ① 板面上 (mm)</span></div>
+    <div class="metric"><b id="m-above">–</b><span>测试点 ② 板上方 30 cm (mm)</span></div>
+  </div>
+  <div class="viz-panel">
+    <div>
+      <label class="ctl"><span>参与求解的样本数</span><input id="n" type="range" min="3" max="30" step="1" value="20"><output id="n-out"></output></label>
+      <label class="ctl"><span>当前显示的样本</span><input id="cur" type="range" min="1" max="20" step="1" value="1"><output id="cur-out">1</output></label>
+      <label class="ctl"><span>估计误差放大</span><input id="mag" type="range" min="1" max="100" step="1" value="20"><output id="mag-out"></output></label>
+      <div class="checks">
+        <label><input type="checkbox" id="show-all" checked> 显示全部样本</label>
+        <label><input type="checkbox" id="show-est" checked> 显示估计相机</label>
+      </div>
+    </div>
+    <div id="noise-sliders"></div>
+  </div>
+</div>
+
+<p><b>值得试一试：</b></p>
+<ul class="try">
+  <li><b>A</b>：把“Tag 尺寸误差”拉到 2%，相机位置误差会跳到约 6 mm，两个测试点一起偏。这就是 README 里反复强调 <code>tag_size</code> 必须和实物一致的原因：尺寸错了，整个平移按比例缩放。</li>
+  <li><b>A</b>：把样本数降到 3–4，误差明显变大。每帧虽然有 6 个约束，但旋转变化不够时，X 和 Y 分不开。</li>
+  <li><b>B</b>：把“双目尺度误差”拉到 1.6%（项目审计怀疑的数值）。残差只略微变大，测试点 ① 仍然很准，<b>测试点 ② 却偏了约 5 mm</b>。原因是所有标定点都在同一个板面上，尺度误差被相机外参“吸收”成了一个只在板面附近成立的解。</li>
+  <li><b>B</b>：把样本数降到 3，没有噪声时仍能精确解出，因为点配准有闭式解；但噪声一大，每帧只有 3 个约束，就需要更多样本把噪声平均掉。</li>
+</ul>
+<p class="note">演示中的几何（相机位置、激光射线、Tag 安装、板子范围）参照两个项目的数值近似设定，噪声大小是示意值，不是现场实测。</p>
 
 <h2>1. 坐标链</h2>
 <p>实线是每次采样都能直接得到的已知量，虚线是要标定的未知量。两条链在“末端标志物”处闭合。</p>

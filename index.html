@@ -85,6 +85,12 @@ ol li,ul li{margin:4px 0}
 .metric b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
 .metric span{font-size:12.5px;color:var(--muted)}
 .try{margin:8px 0 0;padding-left:20px} .try li{margin:6px 0}
+
+.bar{position:relative;height:16px;background:var(--code);border-radius:3px;min-width:90px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
+.bar.a i{background:var(--a)} .bar.b i{background:var(--b)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.callout{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--fg);border-radius:8px;padding:12px 16px;margin:16px 0}
 footer{margin-top:56px;color:var(--muted);font-size:14px}
 </style>
 <script type="importmap">
@@ -141,6 +147,7 @@ footer{margin-top:56px;color:var(--muted);font-size:14px}
       <div class="checks">
         <label><input type="checkbox" id="show-all" checked> 显示全部样本</label>
         <label><input type="checkbox" id="show-est" checked> 显示估计相机</label>
+        <label><input type="checkbox" id="show-labels" checked> 显示文字标签</label>
       </div>
     </div>
     <div id="noise-sliders"></div>
@@ -287,6 +294,50 @@ $$T_{\text{base}}^{\text{cam}}\;p^{\text{cam}}_i \;=\; T_{\text{base}}^{\text{fl
     </ul>
   </div>
 </div>
+
+
+<h2>7. 误差来源与能否解耦</h2>
+
+<h3>7.1 两种方法的误差来源</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>环节</th><th><span class="tag a">A · AprilTag</span></th><th><span class="tag b">B · 激光</span></th></tr></thead>
+  <tbody>
+    <tr><td>相机内参</td><td>K、畸变直接影响 PnP；单目深度对焦距误差敏感</td><td>两目的 K、畸变、校正矩阵影响光斑三角化</td></tr>
+    <tr><td>相机尺度</td><td>Tag 实物尺寸与 <code>tag_size</code> 不符，整个平移按比例缩放</td><td>双目基线 / 外参误差引起尺度误差（审计怀疑约 1.6%）</td></tr>
+    <tr><td>观测本身</td><td>角点噪声；单个平面 Tag 的深度和法向误差大</td><td>光斑质心定位（板面内约 2 mm 的下限）、斜面上光斑变形</td></tr>
+    <tr><td>末端标志物</td><td>Tag 粘贴刚性、平整度（X 假设不变）</td><td>激光射线原点和方向（5 个参数）、测距零点和比例</td></tr>
+    <tr><td>机械臂</td><td colspan="2">基座定义、关节零位、连杆长度（URDF 与实物差异）、负载变形、控制器 TCP/world offset 设置、采集时是否静止</td></tr>
+    <tr><td>求解</td><td>旋转/平移权重（3°/1 cm 或 10°/2 mm）决定两者的取舍</td><td>样本全在一个平面上，离开板面的精度靠外推</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>7.2 机械臂基坐标系误差能单独分出来吗</h3>
+<div class="callout"><b>结论：两种方法都不能。</b>机械臂基座的整体偏差（3 个平移 + 3 个旋转）在数学上和相机外参完全等价：把基座挪动 T，再把相机外参也乘上 T，所有观测一模一样。这不是数据不够，而是任何“相机 + 末端标志物”的标定都存在的规范自由度（gauge freedom）。</div>
+<p>同样无法区分的还有：<b>关节 1 零位</b>（绕基座 z 轴转，等价于基座绕 z 旋转），<b>关节 7 零位</b>（绕法兰 z 轴转，被 Tag 安装 X 或激光射线吸收），以及方法 B 中的<b>测距零点</b>（和激光原点沿射线方向的分量完全重合）。</p>
+<p>好在对“相机看到 → 机械臂去够”这个用途来说，基座的整体偏差<b>并不影响结果</b>：外参是在机械臂自己认为的基座里求的，它会自动吸收这个偏差。只有当基座需要和外部世界对齐时（CAD 模型、另一台机械臂、桌面坐标），才必须引入外部参照物来确定它。</p>
+
+<h3>7.3 关节零位、尺度这类随姿态变化的误差</h3>
+<p>这类误差理论上可观测，因为它们在不同姿态下产生的偏差不一样。但实际能否分出来，要看采样姿态。我用两个项目里<b>实际采集过的姿态</b>（激光 19 组、小板 Tag 12 组，关节角取自记录，正运动学用项目的 URDF）做了线性化可辨识性分析。下表是：只拟合项目实际求解的量（相机外参 + Tag 安装或激光射线）时，各误差源的影响有多少比例<b>还能在残差里看到</b>，剩下的都被相机外参“吃掉”了。</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>误差源</th><th colspan="2"><span class="tag a">A · 12 组 Tag 姿态</span></th><th colspan="2"><span class="tag b">B · 19 组激光姿态</span></th></tr></thead>
+  <tbody><tr><td>基座偏差（6 自由度）</td><td class="num">0%</td><td><div class="bar a"><i style="width:0.5%"></i></div></td><td class="num">0%</td><td><div class="bar b"><i style="width:0.5%"></i></div></td></tr><tr><td>关节1 零位</td><td class="num">0%</td><td><div class="bar a"><i style="width:0.5%"></i></div></td><td class="num">0%</td><td><div class="bar b"><i style="width:0.5%"></i></div></td></tr><tr><td>关节2 零位</td><td class="num">10%</td><td><div class="bar a"><i style="width:9.9%"></i></div></td><td class="num">3%</td><td><div class="bar b"><i style="width:3.3%"></i></div></td></tr><tr><td>关节3 零位</td><td class="num">16%</td><td><div class="bar a"><i style="width:16.0%"></i></div></td><td class="num">4%</td><td><div class="bar b"><i style="width:4.2%"></i></div></td></tr><tr><td>关节4 零位</td><td class="num">18%</td><td><div class="bar a"><i style="width:18.0%"></i></div></td><td class="num">9%</td><td><div class="bar b"><i style="width:9.4%"></i></div></td></tr><tr><td>关节5 零位</td><td class="num">31%</td><td><div class="bar a"><i style="width:31.4%"></i></div></td><td class="num">35%</td><td><div class="bar b"><i style="width:34.9%"></i></div></td></tr><tr><td>关节6 零位</td><td class="num">25%</td><td><div class="bar a"><i style="width:25.1%"></i></div></td><td class="num">18%</td><td><div class="bar b"><i style="width:18.1%"></i></div></td></tr><tr><td>关节7 零位</td><td class="num">0%</td><td><div class="bar a"><i style="width:0.5%"></i></div></td><td class="num">0%</td><td><div class="bar b"><i style="width:0.5%"></i></div></td></tr><tr><td>尺度（A：Tag 尺寸/焦距；B：双目基线）</td><td class="num">25%</td><td><div class="bar a"><i style="width:24.6%"></i></div></td><td class="num">9%</td><td><div class="bar b"><i style="width:9.1%"></i></div></td></tr><tr><td>测距零点</td><td class="num">—</td><td></td><td class="num">0%</td><td><div class="bar b"><i style="width:0.5%"></i></div></td></tr></tbody>
+</table>
+</div>
+<p>换个角度看：把关节 2–6 零位和尺度都当未知量一起解，按 A 每帧 0.5°/2 mm、B 每点 1 mm 的噪声估计，关节零位只能确定到 <b>A ±0.4–0.7°，B ±0.2–1.2°</b>，而且和相机外参高度相关（例如 B 中关节 2 零位与相机绕 y 轴的相关系数 0.95）。实际的关节零位误差通常只有百分之几度，所以<b>用现有数据，两种方法都分不出机械臂运动学误差</b>，它们会被折算进相机外参，表现为“随姿态变化的约 2 mm 残差”。双目尺度在 B 中能确定到 ±0.58%，1.6% 的偏差勉强可以看出来（约 2.8σ）。</p>
+<p>两种方法相比：A 每帧给 6 个约束，包括姿态，对关节零位和尺度的“可见比例”普遍更高（关节 2–4 约是 B 的 2–4 倍）；B 的样本全部在一个平面上，深度方向的信息少，所以吸收得更彻底。但 A 的单目 PnP 本身误差大，最终谁更好取决于具体噪声水平。</p>
+<p class="note">分析为线性化结果，只考虑了关节零位（未含连杆长度、负载变形），噪声水平是假设值。脚本和结果在仓库的 <code>analysis/</code> 目录中，只读取记录数据，不连接任何硬件。</p>
+
+<h3>7.4 想真正解耦，需要分层、各自独立标定</h3>
+<ol>
+  <li><b>相机单独标：</b>不用机械臂。用精密刚性标定物，在多个距离和倾角下标内参和双目外参；再用已知长度的量块或两点距离检查尺度。这样相机误差就和机械臂无关了。</li>
+  <li><b>机械臂运动学单独标：</b>不用相机。最好用激光跟踪仪；没有的话，可以利用 B 方案现有的硬件：让激光在<b>多个不同姿态</b>下测<b>同一块精密平面</b>（最好是多块不同朝向的平面），所有测点必须共面。这个约束只涉及机械臂和激光，可以解出激光射线和关节零位，完全不经过相机。</li>
+  <li><b>最后标外参：</b>相机模型和机械臂模型都固定后，只剩 6 个外参，残差中剩下的才是真正的外参误差和测量噪声。</li>
+  <li><b>基座和外部世界对齐（如需要）：</b>在工作台上设几个精确已知位置的参考点，用机械臂去碰、用相机去看，才能确定基座的整体偏差。</li>
+  <li><b>采样设计：</b>增加姿态数，并让各个关节都有大幅度转动；B 方案还要加入不同高度的目标，不要全部落在一块板上。采集前可以先用 <code>analysis/identifiability.py</code> 的方法检查计划姿态的可辨识性。</li>
+</ol>
 
 <footer>整理自两个项目的源码与项目内的审计报告：AprilTag 方法来自 <code>robotcamcalib/extr_calib.py</code>，激光方法来自 <code>laser_calib</code>（<code>src/algorithms/</code> 与 <code>calibration/diagnostics/</code>）。2026-11-09。</footer>
 </main>

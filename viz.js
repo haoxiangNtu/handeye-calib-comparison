@@ -8,7 +8,7 @@ THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
 
 const $ = (id) => document.getElementById(id);
 const host = $('viz');
-const state = { method: 'A', seed: 1, n: 20, current: 0, magnify: 20, showAll: true, showEst: true };
+const state = { method: 'A', seed: 1, n: 20, current: 0, magnify: 20, showAll: true, showEst: true, showLabels: true };
 
 const params = {
   A: { depthMm: 4, rotDeg: 1, sizePct: 0 },
@@ -103,6 +103,7 @@ function axes(len = 0.05, opacity = 1) {
   return g;
 }
 function label(text, p, cls = '') {
+  if (!state.showLabels) return new THREE.Group();
   const div = document.createElement('div');
   div.className = 'viz-lbl ' + cls;
   div.textContent = text;
@@ -169,6 +170,12 @@ function magnifiedPose(Yest, Ytrue, k) {
 function build() {
   const C = colors();
   scene.background = C.bg;
+  // CSS2D labels keep their DOM nodes unless removed explicitly; dispose GPU resources too.
+  world.traverse((o) => {
+    if (o.isCSS2DObject) o.element.remove();
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) o.material.dispose();
+  });
   scene.remove(world);
   world = new THREE.Group();
   scene.add(world);
@@ -310,6 +317,7 @@ bindRange('n', 'n');
 $('cur').addEventListener('input', () => { state.current = parseInt($('cur').value, 10) - 1; $('cur-out').textContent = $('cur').value; build(); });
 bindRange('mag', 'magnify', (v) => `×${v}`);
 $('show-all').addEventListener('change', (e) => { state.showAll = e.target.checked; build(); });
+$('show-labels').addEventListener('change', (e) => { state.showLabels = e.target.checked; build(); });
 $('show-est').addEventListener('change', (e) => { state.showEst = e.target.checked; build(); });
 $('reseed').addEventListener('click', () => { state.seed += 1; regenerate(); build(); });
 $('reset-view').addEventListener('click', () => { camera.position.set(...HOME[0]); controls.target.set(...HOME[1]); controls.update(); });

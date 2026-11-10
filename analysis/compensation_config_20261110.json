@@ -1,0 +1,10 @@
+{
+ "name": "2026-11-10: dense 10x10 x 4 distance rounds after the camera move and stereo recalibration, 396 points",
+ "reports": {
+  "dense4": "data/validation/20261110_dense4_10x10_pose_height_training/report.json"
+ },
+ "active_calibration": "calibration/active/final_robot_camera_laser_calibration.json",
+ "registration": "data/registration/current_full_aprilgrid_10x10.json",
+ "rectified_K_from": "calibration/camera/report.json",
+ "plane_z_m": -0.0079
+}

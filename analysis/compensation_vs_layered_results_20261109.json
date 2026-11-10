@@ -1,0 +1,291 @@
+{
+ "name": "2026-11-09: three targeting sessions aimed with the 11-09 calibration file (old stereo calibration), 197 points",
+ "points": 197,
+ "sets": {
+  "base": 39,
+  "dense": 99,
+  "ext": 59
+ },
+ "ranges": {
+  "distance_mm": [
+   125.20449659318528,
+   274.9051768990433
+  ],
+  "tilt_deg": 19.951226407909182,
+  "roll_deg": 29.849783127293776
+ },
+ "board_scale": {
+  "calibration_mapping_vs_printed_board_pct": 1.6888142218715263,
+  "calibration_mapping_similarity_residual_mm": 1.0280074453343429,
+  "registration_template_rms_px": 0.6164616942405701
+ },
+ "raw_error_mm": {
+  "as_reported_mixed_mappings": 7.596232330086812,
+  "one_mapping": 4.356447407029809,
+  "mapping_difference_at_spots": 6.750321925680356,
+  "pixel_error_px": 6.100162055722698
+ },
+ "camera_free_ray": {
+  "plane_residual_file_ray_mm": 0.9171017935870226,
+  "plane_residual_fitted_ray_mm": 0.3948081183657546,
+  "direction_change_deg": 1.5603938257660244,
+  "direction_change_components_deg": [
+   0.32096018079366545,
+   1.527421974316178
+  ],
+  "direction_std_deg": [
+   0.1614866156912303,
+   0.23064877374133588
+  ],
+  "lateral_origin_change_mm": [
+   1.1340621132392932,
+   -0.6520783779332149
+  ],
+  "lateral_origin_std_mm": [
+   0.5418184290113812,
+   0.7516097575162527
+  ],
+  "file_direction": [
+   0.021487396685807184,
+   -0.02328285200697514,
+   0.9994979742781314
+  ],
+  "fitted_direction": [
+   -0.005163075592729928,
+   -0.01768933732211265,
+   0.9998302005818428
+  ]
+ },
+ "layered_9": {
+  "in_sample_rms_mm": 0.9714152456170065,
+  "ray_direction_change_deg": 1.4932170514593657,
+  "fitted_direction": [
+   -0.002432482504872016,
+   -0.012946842205497536,
+   0.9999132273881416
+  ],
+  "lateral_origin_change_mm": [
+   -0.18804233499563452,
+   -1.8218098619214458
+  ],
+  "surface_height_offset_mm": -2.211848595987172,
+  "board_vs_robot_scale_pct": 0.08379249746699562,
+  "residual_correlation": {
+   "distance": [
+    -0.056688571441750844,
+    0.018474009763859996
+   ],
+   "tilt_x": [
+    -0.3624057371945264,
+    -0.15297741287236244
+   ],
+   "tilt_y": [
+    -0.18730092861362269,
+    -0.13750060787853868
+   ],
+   "roll": [
+    0.02098550819011064,
+    -0.007482295347564785
+   ]
+  }
+ },
+ "polynomial_44": {
+  "in_sample_rms_mm": 0.7956565991090564,
+  "ridge_alpha": 0.3
+ },
+ "cv_5fold_by_position": {
+  "polynomial_44": {
+   "rms_mm": 0.9295381943274316,
+   "median_mm": 0.6141764770834344
+  },
+  "position_only_12": {
+   "rms_mm": 1.6696288625759088,
+   "median_mm": 1.3707679171615235
+  },
+  "layered_9": {
+   "rms_mm": 1.0047540631553922,
+   "median_mm": 0.7474883061371578
+  },
+  "layered_9_plus_polynomial": {
+   "rms_mm": 0.8649427272087512,
+   "median_mm": 0.5854077536877906
+  }
+ },
+ "small_data_rms_mm": {
+  "10": {
+   "polynomial_44": 2.7904171794871058,
+   "position_only_12": 2.451432941532927,
+   "layered_9": 1.39725554676274,
+   "layered_9_plus_polynomial": 1.397179905389556
+  },
+  "20": {
+   "polynomial_44": 2.1206996443840294,
+   "position_only_12": 2.0804591795199037,
+   "layered_9": 1.0914828927468436,
+   "layered_9_plus_polynomial": 1.1050400891851284
+  },
+  "40": {
+   "polynomial_44": 1.3207765953458541,
+   "position_only_12": 1.8308141701476477,
+   "layered_9": 1.0450632749164859,
+   "layered_9_plus_polynomial": 0.9819044209012742
+  },
+  "80": {
+   "polynomial_44": 0.9818674982966203,
+   "position_only_12": 1.6436939941223532,
+   "layered_9": 1.0043307902040968,
+   "layered_9_plus_polynomial": 0.9080778833782723
+  },
+  "160": {
+   "polynomial_44": 0.9770263172010458,
+   "position_only_12": 1.6870443060913225,
+   "layered_9": 1.0691307713664964,
+   "layered_9_plus_polynomial": 0.9215161377399463
+  }
+ },
+ "cross_set_rms_mm": [
+  {
+   "train": [
+    "base"
+   ],
+   "test": [
+    "ext",
+    "dense"
+   ],
+   "n_train": 39,
+   "n_test": 158,
+   "raw": 4.432266620571778,
+   "polynomial_44": 1.8440199697249058,
+   "position_only_12": 1.9461915774584675,
+   "layered_9": 1.1793884722845231,
+   "layered_9_plus_polynomial": 1.1992794706648846
+  },
+  {
+   "train": [
+    "base",
+    "ext"
+   ],
+   "test": [
+    "dense"
+   ],
+   "n_train": 98,
+   "n_test": 99,
+   "raw": 4.4466977627507145,
+   "polynomial_44": 1.299495737914347,
+   "position_only_12": 1.8364022231168575,
+   "layered_9": 1.0281240956973527,
+   "layered_9_plus_polynomial": 1.0737441501658767
+  },
+  {
+   "train": [
+    "dense"
+   ],
+   "test": [
+    "base",
+    "ext"
+   ],
+   "n_train": 99,
+   "n_test": 98,
+   "raw": 4.263336723406951,
+   "polynomial_44": 1.1960606476053142,
+   "position_only_12": 2.011099899008102,
+   "layered_9": 1.037377592801339,
+   "layered_9_plus_polynomial": 0.9229654266926791
+  }
+ ],
+ "executed_validation_shots": {
+  "count": 12,
+  "closed_loop_error_as_reported_mm": 0.5502006796029022,
+  "layered_9_prediction_error_mm": 0.8478844534416435,
+  "polynomial_44_prediction_error_mm": 0.6700733558865183
+ },
+ "increments_at_point": {
+  "point_mm": [
+   532.1,
+   64.1
+  ],
+  "model": "calibration/candidates/preliminary_combined_197_compensation.json",
+  "rows": {
+   "distance 200->130": {
+    "polynomial": [
+     -0.31095053424879915,
+     1.8193769260974522
+    ],
+    "physical": [
+     -0.48763269289929667,
+     1.7843907656293112
+    ]
+   },
+   "distance 200->275": {
+    "polynomial": [
+     0.49366797668803075,
+     -1.8189933273739933
+    ],
+    "physical": [
+     0.5224635995351719,
+     -1.9118472488885487
+    ]
+   },
+   "roll +30": {
+    "polynomial": [
+     -1.447519910219655,
+     -0.00469066198744561
+    ],
+    "physical": [
+     -1.8477426017138896,
+     -0.23851989714029287
+    ]
+   },
+   "roll -30": {
+    "polynomial": [
+     1.1387638692638347,
+     1.1669226610874806
+    ],
+    "physical": [
+     1.4613617134186825,
+     1.114524724903049
+    ]
+   },
+   "tilt_x +20": {
+    "polynomial": [
+     -0.6288179873136132,
+     -0.425156918042978
+    ],
+    "physical": [
+     -0.01120518438824547,
+     -0.1256244917612861
+    ]
+   },
+   "tilt_x -20": {
+    "polynomial": [
+     0.5409010822560438,
+     -0.268092634121997
+    ],
+    "physical": [
+     0.02419798993889799,
+     -0.27440159079232984
+    ]
+   },
+   "tilt_y +20": {
+    "polynomial": [
+     -0.15221475764267411,
+     -0.08146123752719625
+    ],
+    "physical": [
+     0.047604546557067806,
+     0.011991514745687937
+    ]
+   },
+   "tilt_y -20": {
+    "polynomial": [
+     1.0488535910111736,
+     0.7102288683752684
+    ],
+    "physical": [
+     0.15069994394116293,
+     -0.019395292049573243
+    ]
+   }
+  }
+ }
+}

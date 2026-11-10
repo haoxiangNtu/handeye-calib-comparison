@@ -1,0 +1,16 @@
+{
+ "name": "2026-11-09: three targeting sessions aimed with the 11-09 calibration file (old stereo calibration), 197 points",
+ "reports": {
+  "base": "data/validation/20261109_comprehensive_grid_pose_height_training/report.json",
+  "ext": "data/validation/20261109_extended_grid_pose_height_training/report.json",
+  "dense": "data/validation/20261109_dense_full_10x10_pose_height_training/report.json"
+ },
+ "active_calibration": "data/recalibration/20261110_camera_move/pre_deploy_final_robot_camera_laser_calibration.json",
+ "registration": "data/recalibration/20261110_camera_move/pre_deploy_full_aprilgrid_10x10.json",
+ "rectified_K": [[729.2711917567123, 0.0, 933.8052520751953], [0.0, 729.2711917567123, 526.6510887145996], [0.0, 0.0, 1.0]],
+ "plane_z_m": -0.0079,
+ "polynomial_model": "calibration/candidates/preliminary_combined_197_compensation.json",
+ "validation_report": "data/validation/20261109_comprehensive_compensation_independent_validation/report.json",
+ "cross_set_tests": [[["base"], ["ext", "dense"]], [["base", "ext"], ["dense"]], [["dense"], ["base", "ext"]]],
+ "increment_point_mm": [532.1, 64.1]
+}

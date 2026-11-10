@@ -1,0 +1,144 @@
+{
+ "name": "2026-11-10: dense 10x10 x 4 distance rounds after the camera move and stereo recalibration, 396 points",
+ "points": 396,
+ "sets": {
+  "dense4": 396
+ },
+ "ranges": {
+  "distance_mm": [
+   125.20264466117634,
+   274.6333807315341
+  ],
+  "tilt_deg": 19.930416215789,
+  "roll_deg": 29.98385013605526
+ },
+ "board_scale": {
+  "calibration_mapping_vs_printed_board_pct": 0.36083376015194624,
+  "calibration_mapping_similarity_residual_mm": 0.9104511710171503,
+  "registration_template_rms_px": 0.610771894454956
+ },
+ "raw_error_mm": {
+  "as_reported_mixed_mappings": 8.869141675402922,
+  "one_mapping": 2.0833282512661637,
+  "mapping_difference_at_spots": 7.933173284346597,
+  "pixel_error_px": 2.312164653948414
+ },
+ "camera_free_ray": {
+  "plane_residual_file_ray_mm": 0.9595568075114864,
+  "plane_residual_fitted_ray_mm": 0.4639896618804623,
+  "direction_change_deg": 1.0284787820647168,
+  "direction_change_components_deg": [
+   -0.030597653075981803,
+   1.0281340619644717
+  ],
+  "direction_std_deg": [
+   0.11224314786952597,
+   0.1577410794479373
+  ],
+  "lateral_origin_change_mm": [
+   3.3702606279125926,
+   0.7610700117467835
+  ],
+  "lateral_origin_std_mm": [
+   0.41771818019206586,
+   0.558576246267386
+  ],
+  "file_direction": [
+   0.021487396685807184,
+   -0.02328285200697514,
+   0.9994979742781314
+  ],
+  "fitted_direction": [
+   0.003546643684765088,
+   -0.023821877969332196,
+   0.9997099276533107
+  ]
+ },
+ "layered_9": {
+  "in_sample_rms_mm": 1.2315550191513889,
+  "ray_direction_change_deg": 1.293350544734252,
+  "fitted_direction": [
+   0.0010170516452723134,
+   -0.013778719395035503,
+   0.9999045516937023
+  ],
+  "lateral_origin_change_mm": [
+   0.16376072385485127,
+   -1.6508183692756593
+  ],
+  "surface_height_offset_mm": -2.666053429027039,
+  "board_vs_robot_scale_pct": 0.14447418358147335,
+  "residual_correlation": {
+   "distance": [
+    -0.053923770861945476,
+    0.0019966040131744207
+   ],
+   "tilt_x": [
+    -0.22883951754381432,
+    -0.3212971395797311
+   ],
+   "tilt_y": [
+    -0.34556206570492654,
+    -0.08575289942616256
+   ],
+   "roll": [
+    0.008343070826903718,
+    0.012312939889248654
+   ]
+  }
+ },
+ "polynomial_44": {
+  "in_sample_rms_mm": 1.0429992236287893,
+  "ridge_alpha": 3
+ },
+ "cv_5fold_by_position": {
+  "polynomial_44": {
+   "rms_mm": 1.1702709090679888,
+   "median_mm": 0.7096320602362174
+  },
+  "position_only_12": {
+   "rms_mm": 1.8634776535422504,
+   "median_mm": 1.569842214524738
+  },
+  "layered_9": {
+   "rms_mm": 1.2762846197054336,
+   "median_mm": 0.8513837031833906
+  },
+  "layered_9_plus_polynomial": {
+   "rms_mm": 1.0896251403327362,
+   "median_mm": 0.6279480126096499
+  }
+ },
+ "small_data_rms_mm": {
+  "10": {
+   "polynomial_44": 2.069637002738433,
+   "position_only_12": 2.28116599719106,
+   "layered_9": 1.473834483148225,
+   "layered_9_plus_polynomial": 1.46173151447059
+  },
+  "20": {
+   "polynomial_44": 1.7508143355260257,
+   "position_only_12": 2.0276066525125684,
+   "layered_9": 1.4053693027087453,
+   "layered_9_plus_polynomial": 1.3565396824338736
+  },
+  "40": {
+   "polynomial_44": 1.47724639307603,
+   "position_only_12": 1.99997778525921,
+   "layered_9": 1.3172192965949732,
+   "layered_9_plus_polynomial": 1.2419241539503003
+  },
+  "80": {
+   "polynomial_44": 1.2702473492679722,
+   "position_only_12": 1.922118838537913,
+   "layered_9": 1.3022310196405589,
+   "layered_9_plus_polynomial": 1.1783433557944445
+  },
+  "160": {
+   "polynomial_44": 1.1741091659023348,
+   "position_only_12": 1.8434028326364222,
+   "layered_9": 1.2392522842334237,
+   "layered_9_plus_polynomial": 1.0877080903710838
+  }
+ }
+}
